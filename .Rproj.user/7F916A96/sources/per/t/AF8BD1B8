@@ -1,0 +1,25 @@
+{
+    "collab_server" : "",
+    "contents" : "",
+    "created" : 1527945876471.000,
+    "dirty" : false,
+    "encoding" : "UTF-8",
+    "folds" : "",
+    "hash" : "3661434784",
+    "id" : "AF8BD1B8",
+    "lastKnownWriteTime" : 1532112539,
+    "last_content_update" : 1532112539176,
+    "path" : "~/R-PROJOCT/LOAN/LOAN.Rmd",
+    "project_path" : "LOAN.Rmd",
+    "properties" : {
+        "cursorPosition" : "670,0",
+        "docOutlineVisible" : "0",
+        "ignored_words" : "mungling,ApplicantIncome,LoanAmount,dat,representativeness,CoapplicantIncome,loanAmount,traindata,rf,Analytics,Vidhya,coapplicantIncome\n",
+        "scrollLine" : "472",
+        "tempName" : "Untitled2"
+    },
+    "relative_order" : 2,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_markdown"
+}

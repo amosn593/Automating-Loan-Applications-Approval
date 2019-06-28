@@ -1,0 +1,69 @@
+#Loading library
+library(tidyverse)
+library(readxl)
+library(lubridate)
+
+ 
+#reading data 
+reg <- read_excel("BI Analyst - Application Assignment LastName_FirstName.xlsx",
+                  sheet = 3)
+
+pat <- read_excel("BI Analyst - Application Assignment LastName_FirstName.xlsx",
+                  sheet = 2)
+
+#Data cleaning----
+#DataRegistration
+attach(reg)
+attach(pat)
+length(unique(reg$`Patient Code`))
+
+reg$`Date of Birth` <- ymd(reg$`Date of Birth`)
+reg$Year_Of_Birth <- year(reg$`Date of Birth`)
+
+reg$Age <- 2018-reg$Year_Of_Birth
+
+reg$Under_5 <- ifelse(reg$Age<=5,"Yes","No")
+
+table(reg$Under_5) 
+reg <- reg %>% select(`Patient Code`,Under_5)
+
+reg <- na.omit(reg)
+table(reg$Under_5)
+
+#PatientVisit
+pat$`Visit date` <- ymd(pat$`Visit date`)
+pat$Month <- month(pat$`Visit date`)
+table(pat$Month)
+ 
+pat$Month_Full <- ifelse(pat$Month==1,"Jan",
+                  ifelse(pat$Month==2,"Feb",
+                  ifelse(pat$Month==3,"Mar",
+                  ifelse(pat$Month==4,"Apr",
+                  ifelse(pat$Month==5,"May",
+                  ifelse(pat$Month==6,"Jun",
+                  ifelse(pat$Month==7,"Jul",
+                  ifelse(pat$Month==8,"Aug","Sep"))))))))
+pat$Month_Full <-factor(c("Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep"),
+                levels = c("Jan","Feb","Mar",
+                  "Apr","May","Jun","Jul","Aug","Sep"))
+
+table(pat$Month_Full)
+
+pat$Is_Typhoid <- ifelse(str_detect(pat$Diagnosis,c("tyfoid","typhoid")),
+                         "Yes","No")
+table(pat$Is_Typhoid)  
+pat <- pat[,c(3,12,14,15)]
+pat <- na.omit(pat)
+
+#Data Merging
+data <- full_join(reg,pat,by="Patient Code")
+
+data <- data %>% filter(Is_Typhoid=="Yes")
+data <- data %>% filter(Under_5=="Yes")
+data$`Visit location` <- as.factor(data$`Visit location`)
+data$Month_Full <- as.factor(data$Month_Full)
+data$Is_Typhoid <- as.factor(data$Is_Typhoid)
+
+pivot <- data %>% group_by(`Visit location`,Month_Full) %>% 
+         summarise(number = tally(Is_Typhoid))%>%
+         spread(Month_Full,number)

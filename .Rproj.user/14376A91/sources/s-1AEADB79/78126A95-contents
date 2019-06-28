@@ -1,0 +1,251 @@
+---
+title: "Automating Loan Application's Approval Process"
+author: "Amos Ndonga"
+date: "6/21/2019"
+output:
+    html_document:
+      df_print: paged
+      theme: flatly
+      
+  
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE,
+                      comment=" ",
+                      fig.align='center',
+                      message=FALSE,
+                      warning=FALSE,
+                      cache=TRUE)
+```
+
+### 1. Problem Statement
+
+A bank wants to automate Loan applications' approval process, by fitting a machine learning model.  
+
+## 2. Solution Summary
+
+I trained a random forest model using historical loan applications data and tested the model using test data set unseen by the model. 
+
+Credit history was the most significant variable in determining loan application's approval.  
+
+Model performance:  
+**Accuracy**: 80%.   
+**Sensitivity**: 65%, ability to identify unworthy loan applications.  
+**Specificity** 88%, ability to identity worthy loan applications.  
+**Area Under the Curve**: 77%. 
+
+The model will be monitored and improved further as more data is collected.  
+
+## 3. Data Analysis 
+**Dependent Variable, Loan Status**  
+Majority of the loan applications were approved as seen in the table below.
+
+```{r packages, cache=TRUE}
+#Automating  Loan Approval process----
+
+options(scipen = 999)
+
+#Loading packages----
+library(tidyverse)          # traina manipulation
+library(caret)               #machine learning
+library(mice)                #traina imputation
+library(tidyquant)         #for plotting
+library(lares)             # for model evaluation
+library(knitr)
+
+```
+
+```{r data, cache=TRUE}
+# Loading traina set---- 
+#train dara set
+train <- read.csv("Data/train.csv",header = T,na.strings = c("NA",""))
+
+
+label <- train$Loan_Status
+
+
+# Imputing the missing values using caret package----
+# removing Loan_ID as its not predictive
+train$Loan_ID <- NULL
+
+# Converting Credit_History into factor variable
+train$Credit_History <- as.factor(train$Credit_History)
+
+table(train$Loan_Status)
+
+```
+
+
+**Most significant Variable**  
+Credit history of the loan applicants was most significant variable in determining whether the loan application was approved or not approved, as seen in the figure below.  
+
+```{r impute, results='hide', cache=TRUE}
+
+set.seed(100)
+
+train_impute <- mice(train, m = 5, maxit=10)
+
+train <- complete(train_impute, 3)
+
+```
+
+```{r plot, cache=TRUE}
+
+# Coding credity history to yes and no
+train$Credit_History <- ifelse(train$Credit_History == 1, 'Y', 'N')
+
+train$Credit_History <- as.factor(train$Credit_History)
+
+ggplot(train,aes(Credit_History,fill=Loan_Status))+
+  geom_bar(position = "fill")+
+  ggtitle("Loan Approval Rate By Credit History")+
+  xlab("\nCredit History, Meeting Guidelines")+
+  ylab("Loan Approval Rate")+
+  theme_tq()+
+  scale_fill_tq()+
+  labs(subtitle="Loan Applicants whose credit history met guidelines had loan approval rate  above  75% and below 10% otherwise")+
+  theme(legend.position = "top",
+        plot.title = element_text(hjust=0.5, face='bold'),
+        plot.subtitle=element_text(hjust=0.5))
+
+
+
+```
+
+**Model Evaluation**  
+Constructing confusion matrix to access model performance as the target variable is a binary response.  
+
+```{r , cache=TRUE}
+
+# Data preprocessing, removing skewness and ranging between 0 and 1----
+
+dat_pre <- preProcess(train, method= c("YeoJohnson","range"))
+
+train <- predict(dat_pre, newdata=train)
+
+
+#Creating Dummy Variables----
+ credit <- train$Credit_History 
+
+train$Credit_History <- NULL
+
+
+dat_dummy <- dummyVars(Loan_Status~., data=train)
+
+train <- predict(dat_dummy , newdata=train)
+
+train <- as.data.frame(train)
+
+train$Credity_History <- credit
+
+
+# None of the variable has near zero variance
+
+#Data Subsetting----
+# Subsetting data to only include predictive variables
+train$Loan_Status <- as.factor(label)
+
+name <- make.names(names=names(train))
+
+names(train) <- name
+
+deselect <- c("Gender.Female","Gender.Male","Married.No","Married.Yes","Dependents.0",
+              "Dependents.1","Dependents.2","Dependents.3.","Education.Graduate",
+              "Education.Not.Graduate","Self_Employed.No","Self_Employed.Yes",
+              "Property_Area.Urban","Property_Area.Rural",
+              "Property_Area.Semiurban","Loan_Amount_Term")
+              
+dat_clean <- train %>% select(-deselect)
+
+new_train <- dat_clean[1:614,]
+new_test <- dat_clean[615:981,]
+
+
+#Data Splitting----
+# We split the train data set into training and validating data sets
+set.seed(100)
+index <- createDataPartition(new_train$Loan_Status,times = 1,p=0.75,list = FALSE)
+training <- new_train[index,]
+validating <- new_train[-index,]
+
+training$Loan_Status <- factor(training$Loan_Status)
+validating$Loan_Status <- factor(validating$Loan_Status)
+
+#Cross Validation----
+# Cross validation helps our model perform better on unseen data set by reducing
+# overfitting and underfitting
+# Creating multifolds
+set.seed(100)
+k <- createMultiFolds(training$Loan_Status, k =10, times=10)
+
+# Setting traincontrol
+tr_control <- trainControl(method = "repeatedcv",number = 10,repeats = 10,index=k,
+                           classProbs = T,savePredictions = TRUE,sampling='up', 
+                           summaryFunction = twoClassSummary,verboseIter = FALSE)
+                           
+
+```
+
+
+```{r model, cache=TRUE}
+#Training a random forest model----
+
+set.seed(100)
+
+rf_model <- train(Loan_Status~.,data=training,method="rf",
+                     trControl=tr_control,metric="ROC",verbose=FALSE)
+                     
+
+#Testing the model-----
+# Making predictions
+pred <- predict(rf_model, validating)
+
+
+# Creating a confusion matrix 
+confusionMatrix(pred,validating$Loan_Status)
+
+```
+
+**Roc Curve**  
+Construction area under the curve. This is only possible since this a classification problem.
+
+```{r roc, cache=TRUE}
+
+#ROC-AUC----
+pred1 <- ifelse(pred=="N",0,1)
+score1 <- ifelse(validating$Loan_Status=="N",0,1)
+
+# plotting AUC
+mplot_roc(tag=score1,score=pred1)
+```
+
+The model has *AUC* of 76%.  
+
+
+
+**End Notes**  
+Find source code and data used here. 
+
+[Code and data](https://github.com/amosn593/Automating-Loan-Applications-Approval)  
+
+<p>amosndonga@gmail.com</p>
+
+
+.  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

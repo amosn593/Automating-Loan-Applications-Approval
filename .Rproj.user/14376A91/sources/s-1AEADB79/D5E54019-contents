@@ -1,0 +1,53 @@
+# name
+# omit
+# 1)Gender
+# 2)Dependents
+# 3)Self_Employed
+# 4)TotalIncome
+# 5)Coapplicant
+
+# 1) Raw
+# We have accuracy of 80.87%, sensitivity of 63% and specificity of 89% for random forest model
+
+# We have accuracy of 81%, sensitivity of 58% and specificity of 93% for gbm  model
+
+# We have accuracy of 83%, sensitivity of 58% and specificity of 93% for glm model
+
+# We have accuracy of 81%, sensitivity of 87% and specificity of 92% for xgboost model
+
+# We have accuracy of 84%, sensitivity of 60% and specificity of 94% for neural network  model
+
+
+# 2) up sampling, raw
+# We have accuracy of 78%, sensitivity of 66% and specificity of 83% for random forest model
+
+# We have accuracy of 74%, sensitivity of 63% and specificity of 79% for gbm  model
+
+# We have accuracy of 77%, sensitivity of 65% and specificity of 82% for glm model
+
+# We have accuracy of 78%, sensitivity of 67% and specificity of 82% for xgboost model
+
+# We have accuracy of 77%, sensitivity of 72% and specificity of 78% for neural network  model
+
+# 3) down sampling, raw
+# We have accuracy of 74%, sensitivity of 75% and specificity of 73% for random forest model
+
+# We have accuracy of 70%, sensitivity of 68% and specificity of 71% for gbm  model
+
+# We have accuracy of 75%, sensitivity of 70% and specificity of 77% for glm model
+
+# We have accuracy of 68%, sensitivity of 75% and specificity of 65% for xgboost model
+
+# We have accuracy of 78%, sensitivity of 73% and specificity of 79% for neural network  model
+
+
+# 4) subsetting, raw
+# We have accuracy of 83%, sensitivity of 63% and specificity of 92% for random forest model
+
+# We have accuracy of 84%, sensitivity of 56% and specificity of 96% for gbm  model
+
+# We have accuracy of 84%, sensitivity of 54% and specificity of 97% for glm model
+
+# We have accuracy of 82%, sensitivity of 54% and specificity of 95% for xgboost model
+
+# We have accuracy of 84%, sensitivity of 54% and specificity of 97% for neural network  model

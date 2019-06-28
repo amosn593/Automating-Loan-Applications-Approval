@@ -1,0 +1,9 @@
+fitcontrol <- trainControl(method = "cv",number = 5)
+set.seed(100)
+model2 <- train(Loan_Status~.,data = training[,-c(1:12)],method = "rpart",tuneLenght=5,trControl=fitcontrol,metric ="ACCURACY")
+predicted2 <- predict(model2,validate[,-c(1:12)])
+confusionMatrix(reference = validate$Loan_Status, data = predicted2, mode='everything')
+modelLookup("rpart")
+??rpart
+str(test)
+summary(testdata)

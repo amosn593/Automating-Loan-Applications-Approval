@@ -1,0 +1,670 @@
+---
+title: "LOAN PREDICTION DATASET"
+author: "AMOS NDONGA"
+date: "June 1, 2018"
+output:
+  html_document: default
+  pdf_document: default
+  word_document: default
+---
+
+
+
+##Question Description
+Company wants to automate the loan eligibility process (real time) based on customer detail provided while filling online application form. These details are Gender, Marital Status, Education, Number of Dependents, Income, Loan Amount, Credit History and others. To automate this process, they have given a problem to identify the customers segments, those are eligible for loan amount so that they can specifically target these customers.
+
+####Data Source
+
+<https://datahack.analyticsvidhya.com/contest/practice-problem-loan-prediction-iii/download/train-file>
+<https://datahack.analyticsvidhya.com/contest/practice-problem-loan-prediction-iii/download/test-file>
+
+**Data  DESCRIPTIONS:**   
+
+Variable  |   Description
+----------|---------------
+Loan_ID   | Unique Loan ID
+Gender     | Male/Female
+Married   | Applicant Married(Y/N)
+Dependents | Number of Dependents
+Education  | Applicant Education(Graduate/Under Graduate)
+Self_Employed | Self Employed(Y/N)
+ApplicantIncome | Applicant Income
+CoapplicantIncome |Co applicant Income
+LoanAmount |Loan Amount in Thousands
+Loan_Amount_Term |Term of Loans in Months
+Credit_History | Credit History meets guidelines
+Property_Area | Urban/Semi Urban/Rural
+Loan_Status | Loan Approved(Y/N)
+
+
+##READING INTO R AND CLEANING THE DATA.
+Have already downloaded the data sets.
+Loading the training and testing data sets into R and looking at the structure of the data sets.
+```{r,tidy=TRUE}
+train <- read.csv("train.csv",na.strings = "")
+test <- read.csv("test.csv",na.strings = "")
+dim(train)
+dim(test)
+
+```
+Train data set has **12** variables while test data set has **11** variables.I need to add **Loan_Status** variable into test data set to enable merge with train data set.
+```{r}
+test$Loan_Status <- rep("NONE",367)
+```
+Lets now check if train and test data set have same number of variables and the merge them together and call resulting data set **dat**.
+```{r,tidy=TRUE}
+dim(train)
+dim(test)
+dat <- rbind(train,test)
+dim(dat)
+```
+Take a look at structure of dat data set and see variables' attributes.
+```{r,tidy=TRUE}
+str(dat)
+```
+We see Credit_History variable is of class numeric, but it should be factor.So,lets change it to a factor variable.
+```{r,tidy=TRUE}
+dat$Credit_History <- as.factor(dat$Credit_History)
+str(dat)
+```
+We can see that Credit_History variable has been converted to a factor.  
+
+####Detecting Missing Values
+Missing values reduce the representativeness of the sample, and furthermore, might distort
+inferences about the population.Checking to see if there are missing values(empty strings) and Na's.
+```{r,tidy=TRUE,message=FALSE,warning=FALSE}
+sum(is.na(dat))
+library(skimr)
+skimmed <- skim_to_wide(dat)
+skimmed[, c(1:5)]
+
+```
+Looking at summary statistics
+
+```{r}
+summary(dat)
+```
+From the summary we can see that there are missing values( Na's).   
+ApplicantIncome has a minimum value of zero,we replace them with median value.
+
+```{r}
+dat$ApplicantIncome <- ifelse(dat$ApplicantIncome==0,median(dat$ApplicantIncome),
+                              dat$ApplicantIncome)
+summary(dat$ApplicantIncome)
+```
+
+Now we can impute the Na's value.Load **missForest** packages.
+```{r,warning=FALSE,message=FALSE,tidy=TRUE}
+library(missForest)
+impute_dat <- missForest(dat[,-1]) #Imputing missing values
+
+Imputed <-impute_dat$ximp   #Check imputed values
+
+```
+Now lets append the imputed values into our data set and check to see if all the Na's have been taken care of
+```{r,tidy=TRUE}
+dat[,c(2:13)] <- Imputed[,]
+sum(is.na(dat))
+```
+Now that all Na's have taken care of,we split the dat data set into original training and test data sets.Remember we had combined the training and test data set to save time during cleaning of the data.Training data set had 614 entries while test data set had 367 entries.  
+
+####Splitting the data set train and test data set
+```{r,tidy=TRUE}
+traindata <- dat[1:614,]
+testdata <- dat[615:981,]
+traindata$Loan_Status <- train$Loan_Status
+summary(traindata)
+```
+
+##Exploratory Data Analysis
+We will explore the data set by summary statistics and visualizing to identify patterns.
+
+#####Label Imbalance
+```{r}
+table(traindata$Loan_Status)
+```
+
+Our label is imbalanced with a ratio of almost 1:2.  
+
+#####Gender
+```{r,message=FALSE,warning=FALSE}
+library(ggplot2)
+ggplot(traindata,aes(Gender,fill = Loan_Status))+
+  geom_bar()+
+  xlab("Gender")+
+  ylab("Count")+
+  ggtitle("Gender Distribution")+
+  theme(plot.title=element_text(hjust = 0.5))
+```
+
+From the plot,there were more males than females and proportion of males and females who got loans approved seems to be the same,and hence gender is not that predictive.  
+
+Doing a chi-square to test for independent with Loan Status
+```{r}
+library(stats)
+tab <- table(traindata$Gender,traindata$Loan_Status)
+chisq.test(tab)
+```
+
+Large p-value of 0.7313 > 0.05 confirms that Gender and loan Status are independent.
+
+####Married
+```{r}
+ggplot(traindata,aes(Married,fill = Loan_Status))+
+  geom_bar()+
+  xlab("Married")+
+  ylab("Count")+
+  ggtitle("Marriage Distribution")+
+  theme(plot.title=element_text(hjust = 0.5))
+```
+
+There were more married applicants than unmarried applicants.Proportion of loan approval in the groups seems to be same,though not clear.  
+Doing chi-square test to test for independent.
+
+```{r}
+tab1 <- table(traindata$Married,traindata$Loan_Status)
+chisq.test(tab1)
+```
+
+Null hypothesis does not holds,our p-value of 0.03974 < 0.05 Married and loan status are dependent.
+
+####Dependents
+```{r}
+ggplot(traindata,aes(Dependents,fill = Loan_Status))+
+  geom_bar()+
+  xlab("Number of Dependents")+
+  ylab("Count")+
+  ggtitle("Dependents Distribution")+
+  theme(plot.title=element_text(hjust = 0.5))
+```
+
+Most of the loan applicants had zero dependents.There is no clear pattern.  
+
+Performing a chi-square test
+```{r}
+tab2 <- table(traindata$Dependents,traindata$Loan_Status)
+chisq.test(tab2)
+```
+Null hypothesis holds, p-value of 0.2826 > 0.05, hence Dependents and loan status are independent.
+
+####Education 
+```{r}
+ggplot(traindata,aes(Education,fill = Loan_Status))+
+  geom_bar()+
+  xlab("Education")+
+  ylab("Count")+
+  ggtitle("Education Distribution")+
+  theme(plot.title=element_text(hjust = 0.5))
+```
+
+Most of loan applicants were graduates,there is no clear pattern.  
+Testing for independent.
+
+```{r}
+tab <- table(traindata$Education,traindata$Loan_Status)
+chisq.test(tab)
+```
+
+Our p-value of 0.0431 < 0.05, hence Education and Loan Status are dependent.
+
+####Self Employed
+```{r}
+ggplot(traindata,aes(Self_Employed,fill = Loan_Status))+
+  geom_bar()+
+  xlab("Self Employed")+
+  ylab("Count")+
+  ggtitle("Self Employed Distribution")+
+  theme(plot.title=element_text(hjust = 0.5))
+
+```
+
+Most of loan Applicants were not self employed,there is no clear pattern.  
+Testing for independents.
+
+```{r}
+tab <- table(traindata$Self_Employed,traindata$Loan_Status)
+chisq.test(tab)
+```
+
+P-value is 1 (>0.05),hence Self employed and Loan Status are independent.
+
+####ApplicantIncome
+```{r}
+summary(traindata$ApplicantIncome)
+```
+
+From the summary statistics,applicant Income is positively skewed,as we expected;very few people having huge amount of income.Lets visualize it. 
+
+```{r}
+ggplot(traindata,aes(log(ApplicantIncome),fill= Loan_Status))+
+  geom_density()+
+  xlab("Applicant Income")+
+  ggtitle("ApplicantIncome Distribution")+
+  theme(plot.title=element_text(hjust = 0.5))
+```
+
+From the density plot, it appears Applicants amount of income influenced approval of loans.  
+
+
+####CoapplicantIncome
+```{r}
+summary(traindata$CoapplicantIncome)
+```
+
+CoapplicantIncome is also positively skewed.Lets visualize it 
+
+```{r}
+ggplot(traindata,aes(CoapplicantIncome,fill = Loan_Status))+
+  geom_density()+
+  xlab("Coapplicant Income")+
+  scale_x_log10()+
+  ggtitle("CoapplicantIncome Distribution")+
+  theme(plot.title=element_text(hjust = 0.5))
+```
+
+From the plot there no is a clear pattern, hence coapplicantIncome is not predictive.  
+
+####Loan Amount  
+```{r}
+summary(traindata$LoanAmount)
+```
+
+Loan amount is skewed to the right,as we expected,very few people borrowing huge amounts of loan.Lets visualize it by taking its log to normalize it.
+
+```{r}
+ggplot(traindata,aes(log(LoanAmount),fill= Loan_Status))+
+  geom_density()+
+  xlab("Loan Amount")+
+  ggtitle("Loan Amount Distribution")+
+  theme(plot.title=element_text(hjust = 0.5))
+```
+
+There is a pattern and hence loanAmount is predictive.
+
+####Loan_Amount_Term
+
+```{r}
+summary(traindata$Loan_Amount_Term)
+```
+
+Loan Amount Term is positively.Lets visualize it.
+
+```{r}
+ggplot(traindata,aes(Loan_Amount_Term, fill=Loan_Status))+
+  geom_density()+
+  ggtitle("Loan_Amount_Term Distribution")+
+  theme(plot.title=element_text(hjust = 0.5))
+
+```
+
+There are two modes and seems to be no pattern,hence Loan Amount Term may be not  predictive.  
+
+####Credity History 
+```{r}
+ggplot(traindata,aes(Credit_History,fill = Loan_Status))+
+  geom_bar()+
+  xlab("Credity History")+
+  ggtitle("Credity History")+
+  theme(plot.title=element_text(hjust = 0.5))
+```
+
+There is clear pattern, applicants whose credit history met guidelines  had about 90% chance of their loans being approved,while those whose credit history did not meet guidelines had about 10% chance of their loans being approved.Credit history is very predictive.  
+
+####Property Area
+
+```{r}
+ggplot(traindata,aes(Property_Area,fill = Loan_Status))+
+  geom_bar()+
+  xlab("Property Area")+
+  ggtitle("Property Area Distribution")+
+  theme(plot.title=element_text(hjust = 0.5))
+  
+```
+
+Looking at the plot , there is clear pattern. Testing for independents
+
+```{r}
+tab <- table(traindata$Property_Area,traindata$Loan_Status)
+chisq.test(tab)
+```
+
+A p-value of 0.002136 (<0.05), confirms Property Area and Loan Status are dependent.
+
+From the above exploratory analysis, we have found that Married,Education ApplicantIncome,LoanAmount,Credit History and Property Area had predictive power.
+
+####Feature engineering
+Lets add ApplicantIncome and Co applicant together.
+```{r,warning=FALSE,message=FALSE}
+library(dplyr)
+traindata <- mutate(traindata,Total_Income=traindata$ApplicantIncome +
+                    traindata$CoapplicantIncome)
+summary(traindata$Total_Income)
+```
+
+Total_Income is positively skewed,lets visualize it.
+
+```{r}
+ggplot(traindata,aes(log(Total_Income),fill = Loan_Status))+
+  geom_density()+
+  xlab("Total Income")+
+  ggtitle("Total Income Distribution")+
+  theme(plot.title=element_text(hjust = 0.5))
+  
+```
+
+Total Income seems to be predictive. 
+
+Let normalize all numeric variable by taking their logs.
+```{r}
+traindata$ApplicantIncome <- log(traindata$ApplicantIncome)
+traindata$Loan_Amount_Term <- log(traindata$Loan_Amount_Term)
+traindata$LoanAmount <- log(traindata$LoanAmount)
+traindata$Total_Income <- log(traindata$Total_Income)
+traindata$CoapplicantIncome <- log(traindata$CoapplicantIncome)
+```
+
+Lets select important features.
+```{r}
+features <- c("Married","Education","ApplicantIncome","LoanAmount","Loan_Amount_Term",
+             "Credit_History","Property_Area","Loan_Status","Total_Income")
+```
+
+####Data splitting
+We are going to split the traindata set into training and validating data set.
+```{r,message=FALSE,warning=FALSE}
+library(caret)
+set.seed(100)
+index <- createDataPartition(traindata$Loan_Status,p=0.75,list=FALSE)
+training <- traindata[index,]
+validating <- traindata[-index,]
+```
+
+##Modelling
+
+Now comes the important stage where you actually build the machine learning model.  
+Let’s train a random forest model by setting the method='rf'.
+
+```{r}
+training <- training[,features]
+validating <- validating[,features]
+```
+
+####Cross validation
+lets create 5-folds cross validation
+```{r}
+rf.1 <- training[,-8]
+label <- as.factor(training$Loan_Status)
+set.seed(100)
+cv.5 <- createMultiFolds(label,k=5,times = 10)
+```
+
+####Setting traincontrol
+
+```{r,cache=TRUE}
+set.seed(100)
+tr.1 <- trainControl(method = "repeatedcv",number = 5,repeats = 10,
+                     verbose=FALSE,index = cv.5,classProbs = TRUE,
+                     summaryFunction = twoClassSummary)
+```
+
+####Training the model
+
+```{r,tidy=TRUE,warning=FALSE,cache=TRUE,message=FALSE}
+set.seed(100)
+rf.model.1 <- train(x=rf.1,y=label,method = "rf",metric="ROC",
+                    tuneLength=30,trControl=tr.1)
+rf.model.1 #Check out results
+```
+
+####Checking variable importance
+
+let’s extract the variable importance using var Imp() to understand which variables came out to be useful.
+```{r,tidy=TRUE}
+varimp_rf <- varImp(rf.model.1)
+plot(varimp_rf, main="Variable Importance with rf")
+```
+
+As expected Credit_History is most important variable.
+
+####Predict on validating data set
+
+Lets test our model by making predictions on validating data set.
+```{r,tidy=TRUE}
+predicted <- predict(rf.model.1,validating)
+```
+
+####Confusion Matrix
+
+The confusion matrix is a tabular representation to compare the predictions (data) vs the actual (reference). By setting mode='everything' pretty much most classification evaluation metrics are computed.
+
+```{r,tidy=TRUE}
+confusionMatrix(reference = validating$Loan_Status, data = predicted, mode='everything')
+```
+
+We have an overall accuracy of 83%.Although we have a specificity rate of 92%, our sensitivity of 62% is not that good.Our model is not performing good on identifying loan applications which should not be approved and this may be very risky and costly to the bank.  
+So, how do we improve our model.We saw that Education was not that important,maybe we can exclude it and see if we can get better results.
+
+####Excluding Education
+
+```{r}
+training.1 <- training[,-2]
+validating.1 <- validating[,-2]
+```
+
+####Cross validation
+
+lets create 5-folds cross validation
+```{r}
+rf.2 <- training.1[,-7]
+label <- as.factor(training.1$Loan_Status)
+set.seed(100)
+cv.5.1 <- createMultiFolds(label,k=5,times = 10)
+```
+
+####Setting traincontrol
+
+```{r}
+set.seed(100)
+tr.2 <- trainControl(method = "repeatedcv",number = 5,repeats = 10,
+                     verbose=FALSE,index = cv.5.1,classProbs = TRUE,
+                     summaryFunction = twoClassSummary)
+```
+
+####Training the model
+
+```{r,tidy=TRUE,warning=FALSE,cache=TRUE,message=FALSE}
+set.seed(100)
+rf.model.2 <- train(x=rf.2,y=label,method = "rf",metric="ROC",
+                    tuneLength=30,trControl=tr.2)
+rf.model.2 #Check out results
+```
+
+####Checking variable importance
+
+let’s extract the variable importance using var Imp() to understand which variables came out to be useful.
+```{r,tidy=TRUE}
+varimp_rf.1 <- varImp(rf.model.2)
+plot(varimp_rf.1, main="Variable Importance with rf")
+```
+
+As expected Credit_History is most important variable.
+
+
+####Predict on validating data set
+Lets test our model by making predictions on validating data set.
+```{r,tidy=TRUE}
+predicted.1 <- predict(rf.model.2,validating.1)
+```
+
+####Confusion Matrix
+```{r,tidy=TRUE}
+confusionMatrix(reference = validating.1$Loan_Status, data = predicted.1, mode='everything')
+```
+
+Although our overall accuracy and sensitivity have remained constant,our specificity has increased to 93%.
+
+####Excluding Married,Property Area and Loan Amount Term
+
+```{r}
+training.2 <- training.1[,-c(1,4,6)]
+validating.2 <- validating.1[,-c(1,4,6)]
+```
+
+####Cross validation
+
+lets create 5-folds cross validation
+```{r}
+rf.3 <- training.2[,-4]
+label <- as.factor(training.2$Loan_Status)
+set.seed(100)
+cv.5.2 <- createMultiFolds(label,k=5,times = 10)
+```
+
+####Setting traincontrol
+
+```{r}
+set.seed(100)
+tr.3 <- trainControl(method = "repeatedcv",number = 5,repeats = 10,
+                     verbose=FALSE,index = cv.5.2,classProbs = TRUE,
+                     summaryFunction = twoClassSummary)
+```
+
+####Training the model
+
+```{r,tidy=TRUE,warning=FALSE,cache=TRUE,message=FALSE}
+set.seed(100)
+rf.model.3 <- train(x=rf.3,y=label,method = "rf",metric="ROC",
+                    tuneLength=30,trControl=tr.3)
+rf.model.3 #Check out results
+```
+
+####Checking variable importance
+
+let’s extract the variable importance using var Imp() to understand which variables came out to be useful.
+```{r,tidy=TRUE}
+varimp_rf.2 <- varImp(rf.model.3)
+plot(varimp_rf.2, main="Variable Importance with rf")
+```
+
+As expected Credit_History is most important variable.
+
+
+####Predict on validating data set
+Lets test our model by making predictions on validating data set.
+```{r,tidy=TRUE}
+predicted.2 <- predict(rf.model.3,validating.2)
+```
+
+####Confusion Matrix
+```{r,tidy=TRUE}
+confusionMatrix(reference = validating.2$Loan_Status, data = predicted.2, mode='everything')
+```
+
+Our overall accuracy and specificity decreased to 82% and 89% respectively,our sensitivity has increased to 66%.
+
+####Excluding LoanAmount
+
+```{r}
+training.3 <- training.2[,-2]
+validating.3 <- validating.2[,-2]
+```
+
+####Cross validation
+
+lets create 5-folds cross validation
+```{r}
+rf.4 <- training.3[,-3]
+label <- as.factor(training.3$Loan_Status)
+set.seed(100)
+cv.5.3 <- createMultiFolds(label,k=5,times = 10)
+```
+
+####Setting traincontrol
+
+```{r}
+set.seed(100)
+tr.4 <- trainControl(method = "repeatedcv",number = 5,repeats = 10,
+                     verbose=FALSE,index = cv.5.3,classProbs = TRUE,
+                     summaryFunction = twoClassSummary)
+```
+
+####Training the model
+
+```{r,tidy=TRUE,warning=FALSE,cache=TRUE,message=FALSE}
+set.seed(100)
+rf.model.4 <- train(x=rf.4,y=label,method = "rf",metric="ROC",
+                    tuneLength=30,trControl=tr.4)
+rf.model.4 #Check out results
+```
+
+####Checking variable importance
+
+let’s extract the variable importance using var Imp() to understand which variables came out to be useful.
+
+```{r,tidy=TRUE}
+varimp_rf.3 <- varImp(rf.model.4)
+plot(varimp_rf.3, main="Variable Importance with rf")
+```
+
+Credit history is the least important.Something must be wrong.We know from our exploratory data analysis, credit history was the most important variable.
+
+
+####Predict on validating data set
+Lets test our model by making predictions on validating data set.
+```{r,tidy=TRUE}
+predicted.3 <- predict(rf.model.4,validating.3)
+```
+
+####Confusion Matrix
+```{r,tidy=TRUE}
+confusionMatrix(reference = validating.3$Loan_Status, data = predicted.3, mode='everything')
+```
+
+Our model has performed poorly compared to the other models.Overall accuracy has reduced to 79% and specificity to 84%, but sensitivity has remained at 66%.  
+
+Out of the four models I have trained,model 2(rf.model.) has performed the best,accuracy of 83%,sensitivity of 62% and specificity of 93%.
+
+##Making Submission
+We will use our model rf.model.3 to make predictions on our test data set in order to make submission to Analytics Vidhya to score our model performance.  
+We will take the test data set through exact steps we took through the train data set.
+
+####Subsetting test dataset
+```{r}
+test.1 <- testdata[,c("Married","ApplicantIncome","CoapplicantIncome","LoanAmount","Loan_Amount_Term","Credit_History","Property_Area")]
+
+test.1$Credit_History <- as.factor(test.1$Credit_History)
+summary(test.1)
+```
+
+
+####Creating Total Income Variable
+```{r}
+test.1 <- mutate(test.1,Total_Income=test.1$ApplicantIncome+test.1$CoapplicantIncome)
+test.1$CoapplicantIncome <- NULL #Remove Coapplicant Variable
+str(test.1)
+```
+
+####Taking log of numeric variables
+```{r}
+test.1$ApplicantIncome <- log(test.1$ApplicantIncome)
+test.1$Loan_Amount_Term <- log(test.1$Loan_Amount_Term)
+test.1$LoanAmount <- log(test.1$LoanAmount)
+test.1$Total_Income <- log(test.1$Total_Income)
+```
+
+####Making Predictions
+```{r}
+pred.test <- predict(rf.model.2,test.1)
+head(pred.test)
+```
+
+####Writing CSV for submission
+```{r,tidy=TRUE,eval=FALSE}
+submit.df <- data.frame(Loan_ID=testdata$Loan_ID,Loan_Status=pred.test)
+write.csv(submit.df,"RF_201807_20.csv",row.names = FALSE)
+```
+
+##Conclusion
+Thank you for go through my work.Any comment,correction,suggestion and recommendation is highly welcomed.
+
+**Thank You**.

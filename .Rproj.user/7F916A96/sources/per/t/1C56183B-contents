@@ -1,0 +1,372 @@
+train <- read.csv("train.csv",na.strings = "")
+test <- read.csv("test.csv",na.strings = "")
+
+# Combine the datasets
+test$Loan_Status <- rep("None",nrow(test))
+data <- rbind(train,test)
+
+#Looking at structure
+str(data)
+data$Credit_History <- as.factor(data$Credit_History)
+
+#Looking at the summary
+summary(data)
+
+#Looking at NA"S
+colSums(is.na(data))
+
+#Filling NA's
+library(mice)
+imputed <- mice(data[,-1],m=5,maxit = 10)
+completed <- complete(imputed,5)
+
+##Appending NA's
+data$Gender <- completed$Gender
+data[,c(3,4,6,9,10,11)] <- completed[,c(2,3,5,8,9,10)]
+summary(data)
+str(data)
+
+###Checking NA's
+sum(is.na(data))
+attach(data)
+
+#EDAs
+
+#Gender
+table(data[1:614,]$Gender)
+library(ggplot2) # load ggplot2 package for data visualization
+ggplot(data[1:614,],aes(Gender,fill=Loan_Status))+
+  geom_bar()+
+  ggtitle("Gender")+
+  theme_bw()
+  
+#Married
+table(data[1:614,]$Married)
+ggplot(data[1:614,],aes(Married,fill=Loan_Status))+
+  geom_bar()+
+  ggtitle("Married")+
+  theme_bw()
+
+#Married is somehow predictive
+
+#Dependents
+table(data[1:614,]$Dependents)
+ggplot(data[1:614,],aes(Dependents,fill=Loan_Status))+
+  geom_bar()+
+  ggtitle("Dependents")+
+  theme_bw()
+
+#No clear pattern
+
+#Education
+table(data[1:614,]$Education)
+ggplot(data[1:614,],aes(Education,fill=Loan_Status))+
+  geom_bar()+
+  ggtitle("Education")+
+  theme_bw()
+
+#Graduates were more likely to be given loans
+
+#Self employed
+table(data[1:614,]$Self_Employed)
+
+ggplot(data[1:614,],aes(Self_Employed,fill =Loan_Status))+
+  geom_bar()+
+  ggtitle("Self Employed")+
+  theme_bw()
+
+#If employed more likely to get a loan.
+
+#Applicant Income
+summary(data[1:614,]$ApplicantIncome)
+
+ggplot(data[1:614,],aes(ApplicantIncome,fill=Loan_Status))+
+  geom_histogram(bins = 50)+
+  ggtitle("ApplicantIncome")+
+  ylab("ApplicantIcome")+
+  facet_wrap(~Loan_Status)+
+  scale_x_continuous(trans = "log10")+
+  theme_bw()
+# ApplicantIncome is predictive
+
+#Looking at CoapplicantIncome
+summary(data[1:614,]$CoapplicantIncome)
+
+ggplot(data[1:614,],aes(CoapplicantIncome,fill=Loan_Status))+
+  geom_histogram(bins = 50)+
+  scale_x_continuous(trans = "log10")+
+  ggtitle("CoapplicantIncome")+
+  facet_wrap(~Loan_Status)+
+  theme_bw()
+
+cor(data[1:614,]$ApplicantIncome,data[1:614,]$CoapplicantIncome)
+# CoapplicantIncome is predictive
+
+#Loan Amount
+summary(data[1:614,]$LoanAmount)
+
+ggplot(data[1:614,],aes(LoanAmount,fill=Loan_Status))+
+  geom_histogram(bins = 50)+
+  facet_wrap(~Loan_Status)+
+  ggtitle("LoanAmount")+
+  theme_bw()
+
+#Loan Amount Term
+summary(data[1:614,]$Loan_Amount_Term)
+
+unique(data[1:614,]$Loan_Amount_Term)
+
+ggplot(data[1:614,],aes(Loan_Amount_Term,fill=Loan_Status))+
+  geom_histogram(bins = 50)+
+  ggtitle("LoanTerm")+
+  facet_wrap(~Loan_Status)+
+  theme_bw()
+
+#Credity history
+table(data[1:614,]$Credit_History)
+
+ggplot(data[1:614,],aes(as.factor(Credit_History),fill=Loan_Status))+
+  geom_bar()+
+  ggtitle("Credity History")+
+  theme_bw()
+# Credit_History is very predictive
+
+#Property area
+table(data[1:614,]$Property_Area)
+
+ggplot(data[1:614,],aes(Property_Area,fill=Loan_Status))+
+  geom_bar()+
+  ggtitle("Property Area")+
+  theme_bw()
+
+# Advanced exploratory data analysis and feature engineering
+
+#loan amount term
+library(dplyr) # for data manipulation
+data <- mutate(data,Loan_Term = ifelse(Loan_Amount_Term <=300,"Short Term","Long Term"))
+
+ggplot(data[1:614,],aes(Loan_Term,fill =Loan_Status))+
+  geom_bar()+
+  ggtitle("Loan_Term")+
+  theme_bw()
+# Loan_Term not predictive
+
+ggplot(data[1:614,],aes(LoanAmount,Loan_Amount_Term, color =Loan_Status))+
+  geom_point()+
+  ggtitle("Loan Amount Vs Loan Term")+
+  facet_wrap(~Loan_Status)+
+  theme_bw()
+
+data <- mutate(data,Loan_Term_Credity=ifelse(data$Credit_History=="0" & data$Loan_Amount_Term >=150,
+               "No","Yes"))
+
+ggplot(data[1:614,],aes(Loan_Term_Credity,fill =Loan_Status))+
+  geom_bar()+
+  ggtitle("Loan_Term_Credity")+
+  theme_bw()
+# Loan_Term_Credity is very predictive 
+
+#Gender, Married and Dependents to depict family setting
+
+ggplot(data[1:614,],aes(Gender,fill=Loan_Status))+
+  geom_bar()+
+  facet_wrap(~Married)+
+  ggtitle("Family setting-Gender,Married")+
+  theme_bw()+
+  xlab("Married")
+  
+    
+# No particular pattern 
+
+#Education & Self Employed
+ggplot(data[1:614,],aes(Education,fill=Loan_Status))+
+  geom_bar()+
+  facet_wrap(~Self_Employed)+
+  xlab("Self Employed")+
+  ggtitle("Education with Self Employed")+
+  theme_bw()
+# No particular Pattern 
+
+#Income applicant & coapplicant
+ggplot(data[1:614,],aes(x=CoapplicantIncome,y=ApplicantIncome,color =Loan_Status))+
+  geom_point()+
+  scale_x_continuous()+
+  scale_y_continuous()+
+  facet_wrap(~Credit_History)+
+  ggtitle("Applicant and Coapplicant Income")+
+  theme_bw()
+data <- mutate(data,Income_Credity=ifelse(data$Credit_History=="0" & data$ApplicantIncome<=15000 &
+                                  data$CoapplicantIncome<=7500,"No","Yes"))
+
+ggplot(data[1:614,],aes(Income_Credity,fill=Loan_Status))+
+  geom_bar()+
+  ggtitle("Income Credity")+
+  theme_bw()
+data <- mutate(data,Total_Income=data$ApplicantIncome + data$CoapplicantIncome)
+
+ggplot(data[1:614,],aes(Total_Income,fill=Loan_Status))+
+  geom_histogram(bins = 50)+
+  scale_x_log10()+
+  facet_wrap(~Loan_Status)+
+  ggtitle("Total Income")+
+  theme_bw()
+# Income_Credity is very predictive
+
+# Property area 
+ggplot(data[1:614,],aes(Property_Area,fill=Loan_Status))+
+  geom_bar()+
+  ggtitle("Property Area by Credity history")+
+  facet_wrap(~Credit_History)+
+  theme_bw()
+# Converting to factors 
+data$Loan_Term_Credity <- as.factor(data$Loan_Term_Credity)
+data$Income_Credity <- as.factor(data$Income_Credity)
+data$Loan_Term <- as.factor(data$Loan_Term)
+                                  
+#==================================================================================
+    #Modelling
+#==================================================================================
+#Random forest
+library(randomForest)
+colnames(data)
+rf.train.1 <- data[1:614,c("ApplicantIncome","CoapplicantIncome","LoanAmount","Loan_Amount_Term",
+                           "Credit_History","Property_Area")]
+lab <- as.factor(train$Loan_Status)
+
+set.seed(1234)
+rf.1 <- randomForest(x=rf.train.1,y=lab,importance = TRUE,ntree = 100)
+rf.1 
+# We have an error of 19.06%
+varImpPlot(rf.1)
+
+# Lets include all the features 
+rf.train.2 <- data[1:614,c("Gender","Married","Dependents","Education","Self_Employed","ApplicantIncome",   
+                           "CoapplicantIncome","LoanAmount","Loan_Amount_Term","Credit_History",
+                           "Property_Area")]
+set.seed(1234)
+rf.2 <- randomForest(x =rf.train.2,y=lab,importance = TRUE,ntree = 100)
+rf.2
+# with all features we have an error of 19.06%
+varImpPlot(rf.2)
+ 
+# Lets only use Credit_History,ApplicantIncome,CoapplicantIncome & LoanAmount
+rf.train.3 <- data[1:614,c("ApplicantIncome","CoapplicantIncome","LoanAmount","Credit_History")]
+
+set.seed(1234)
+rf.3 <- randomForest(x=rf.train.3,y=lab,importance = TRUE, ntree = 100)
+rf.3
+# We have an error of 19.22%
+varImpPlot(rf.3)
+
+# Lets include features we engineered
+rf.train.4 <- data[1:614,c("Loan_Term","Income_Credity","Loan_Term_Credity")]
+
+set.seed(1234)
+rf.4 <- randomForest(x=rf.train.4,y=lab,importance = TRUE,ntree = 100)
+rf.4
+# We have an error rate of 18.73%
+varImpPlot(rf.4)
+
+# Loan_Term is not that important from the plot,lets exclude it and see the outcome.
+rf.train.5 <- data[1:614,c("Income_Credity","Loan_Term_Credity")]
+
+set.seed(1234)
+rf.5 <- randomForest(x=rf.train.5,y=lab,importance = TRUE,ntree = 100)
+rf.5
+# Our error rate has not changed 18.73%
+
+# Lets include Credit_History to our enginnered features and see what happens
+rf.train.6 <- data[1:614,c("Income_Credity","Loan_Term_Credity","Credit_History")]
+
+set.seed(1234)
+rf.6 <- randomForest(x=rf.train.6,y=lab,importance = TRUE,ntree = 100)
+rf.6
+# our error rate has reduced to 18.73%
+varImpPlot(rf.6)
+
+# Lets include Credit_History,total income,Loan_Amount_Term,LoanAmount,Gender,Married
+rf.train.7 <- data[1:614,c("Education","Credit_History","Loan_Term","CoapplicantIncome",
+                           "Total_Income","Gender","Self_Employed")]
+set.seed(1234)
+rf.7 <- randomForest(x=rf.train.7,y=lab,importance = TRUE,ntree=100)
+rf.7
+# we have error rate of 18.73%
+varImpPlot(rf.7)
+
+#Subset test data to make submission
+test.submit <- data[615:981,c("Education","Credit_History","Loan_Term","CoapplicantIncome",
+                              "Total_Income","Gender","Self_Employed")]
+
+#MAke predictions
+pred.t <- predict(rf.7,test.submit)
+table(pred.t)
+
+#Write a csv file for submission
+submit.df <- data.frame(Loan_ID=data[615:981,"Loan_ID"],Loan_Status=pred.t)
+write.csv(submit.df,file = "RF_20180712_2.csv",row.names = FALSE)
+
+#=========================================================================
+  #Cross Validation
+#=========================================================================
+library(caret)
+
+set.seed(1234)
+cv.10.fold <- createMultiFolds(lab,k=10,times = 10)
+
+#Set up traincontrol as per above object
+tr.c1 <- trainControl(method = "repeatedcv",number = 10,repeats = 10,
+                      index = cv.10.fold)
+
+# Train the model 
+set.seed(1234)
+rf.c1 <- train(x = rf.train.7,y = lab,method ='rf',tunelength =3,mtree =1000,
+              trControl =tr.c1)
+
+# Check out results
+rf.c1
+
+# rfc1 is pessimistic compared to rf.7, has accurancy of 81.31%
+
+# Lets try 5-folds CV
+
+set.seed(1234)
+cv.5.fold <- createMultiFolds(lab,k=5,times = 10)
+
+
+#Set up traincontrol
+tr.c2 <- trainControl(method = "repeatedcv",number = 5,repeats = 10,
+                      index = cv.5.fold)
+
+#set seed
+set.seed(1234)
+rf.c2 <- train(x = rf.train.7,y = lab,method ='rf',tunelength =3,mtree =1000,
+              trControl =tr.c2)
+rf.c2
+
+# 5- folds CV is not better, lets try 3-fold CV
+
+set.seed(1234)
+cv.3.fold <- createMultiFolds(lab,k=3,times = 10)
+
+
+#Set up traincontrol
+tr.c3 <- trainControl(method = "repeatedcv",number = 3,repeats = 10,
+                      index = cv.3.fold)
+
+#set seed
+
+set.seed(1234)
+rf.c3 <- train(x = rf.train.7,y = lab,method ='rf',tunelength =3,mtree =1000,
+              trControl =tr.c3)
+rf.c3
+
+#=============================================================================
+ # EDAs 2
+#=============================================================================
+#Those loan not approved
+dat <- filter(data,Loan_Status=="N")
+summary(dat)
+
+#Those loan approved
+dat1 <- filter(data,Loan_Status=="Y" )
+summary(dat1)

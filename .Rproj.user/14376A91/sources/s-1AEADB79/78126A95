@@ -1,0 +1,29 @@
+{
+    "collab_server" : "",
+    "contents" : "",
+    "created" : 1561131292439.000,
+    "dirty" : false,
+    "encoding" : "UTF-8",
+    "folds" : "",
+    "hash" : "3357393433",
+    "id" : "78126A95",
+    "lastKnownWriteTime" : 1561728677,
+    "last_content_update" : 1561728677725,
+    "path" : "E:/R-PROJOCT/LOAN/Loan.Rmd",
+    "project_path" : "Loan.Rmd",
+    "properties" : {
+        "cursorPosition" : "231,27",
+        "docOutlineVisible" : "0",
+        "ignored_words" : "Ndonga,nCredit,csv,YeoJohnson,Semiurban,repeatedcv,rf,Roc\n",
+        "last_setup_crc32" : "D3BD935B7f963428",
+        "scrollLine" : "219",
+        "tempName" : "Untitled1"
+    },
+    "read_only" : false,
+    "read_only_alternatives" : [
+    ],
+    "relative_order" : 7,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_markdown"
+}

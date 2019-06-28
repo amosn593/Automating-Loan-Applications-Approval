@@ -1,0 +1,29 @@
+{
+    "collab_server" : "",
+    "contents" : "",
+    "created" : 1532112111394.000,
+    "dirty" : false,
+    "encoding" : "",
+    "folds" : "",
+    "hash" : "0",
+    "id" : "3E3413B2",
+    "lastKnownWriteTime" : 31525678432190511,
+    "last_content_update" : 1532112111394,
+    "path" : null,
+    "project_path" : null,
+    "properties" : {
+        "cacheKey" : "602E9F8A",
+        "caption" : "validating.1",
+        "contentUrl" : "grid_resource/gridviewer.html?env=&obj=validating.1&cache_key=602E9F8A",
+        "displayedObservations" : 153,
+        "environment" : "",
+        "object" : "validating.1",
+        "preview" : 0,
+        "totalObservations" : 153,
+        "variables" : 8
+    },
+    "relative_order" : 6,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_dataframe"
+}

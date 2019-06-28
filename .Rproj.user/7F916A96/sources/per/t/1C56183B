@@ -1,0 +1,23 @@
+{
+    "collab_server" : "",
+    "contents" : "",
+    "created" : 1528223011413.000,
+    "dirty" : false,
+    "encoding" : "UTF-8",
+    "folds" : "",
+    "hash" : "438321695",
+    "id" : "1C56183B",
+    "lastKnownWriteTime" : 1531406196,
+    "last_content_update" : 1531406196387,
+    "path" : "~/R-PROJOCT/LOAN/train.R",
+    "project_path" : "train.R",
+    "properties" : {
+        "cursorPosition" : "362,0",
+        "scrollLine" : "0",
+        "tempName" : "Untitled2"
+    },
+    "relative_order" : 3,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_source"
+}

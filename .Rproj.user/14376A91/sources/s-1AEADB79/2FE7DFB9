@@ -1,0 +1,26 @@
+{
+    "collab_server" : "",
+    "contents" : "",
+    "created" : 1559051154580.000,
+    "dirty" : false,
+    "encoding" : "UTF-8",
+    "folds" : "",
+    "hash" : "0",
+    "id" : "2FE7DFB9",
+    "lastKnownWriteTime" : 1561672795,
+    "last_content_update" : 1561672795908,
+    "path" : "E:/R-PROJOCT/LOAN/Loan.R",
+    "project_path" : "Loan.R",
+    "properties" : {
+        "cursorPosition" : "610,0",
+        "docOutlineVisible" : "0",
+        "scrollLine" : "0"
+    },
+    "read_only" : false,
+    "read_only_alternatives" : [
+    ],
+    "relative_order" : 1,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_source"
+}
