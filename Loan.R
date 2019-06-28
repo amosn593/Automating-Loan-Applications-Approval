@@ -1,5 +1,7 @@
 #Automating  Loan Approval process----
 
+# data source as at 21/06/2019, https://datahack.analyticsvidhya.com/contest/practice-problem-loan-prediction-iii/
+
 options(scipen = 999)
 
 #Loading packages----
